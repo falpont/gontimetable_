@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "707264298606",
+    "project_id": "gontimetable-cecc3",
+    "storage_bucket": "gontimetable-cecc3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:707264298606:android:3e8589735b5744efcd307f",
+        "android_client_info": {
+          "package_name": "com.example.gontimetable"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJHawjqH3KqHi4Go1wSD37yy7uwkGF50U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
