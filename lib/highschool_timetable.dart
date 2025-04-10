@@ -3,11 +3,11 @@ import 'package:gontimetable/school_schedule.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'meal_screen.dart';
-import 'package:intl/intl.dart';
+import 'Settings_window.dart';
 
 class HighSchoolTimetable extends StatefulWidget {
-  final String grade;    // 초기 학년
-  final String classNum; // 초기 반
+  final String grade;
+  final String classNum;
 
   const HighSchoolTimetable({
     Key? key,
@@ -23,20 +23,14 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
   late String selectedGrade;
   late String selectedClass;
 
-  // API가 "2025-03-25" 형태로 준다고 가정 → "03월 25일" 형식으로 표시
   String currentDate = "불러오는 중...";
   bool isLoading = false;
 
-  // 시간표 데이터 (월~금 5일, 1~7교시)
-  // timetableData[dayIndex][periodIndex]
-  // dayIndex: 0=월, 1=화, 2=수, 3=목, 4=금
-  // periodIndex: 0~6 (1~7교시)
   List<List<String>> timetableData = List.generate(
     5,
         (_) => List.generate(7, (_) => ""),
   );
 
-  // 왼쪽 첫 열(교시) 라벨: 예시로 7교시 (UI 표시에만 사용)
   final List<String> periodLabels = [
     "1(9:10)",
     "2(10:10)",
@@ -47,7 +41,6 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
     "7(15:50)",
   ];
 
-  // 상단 열(요일) 라벨: 예시로 월(17), 화(18), 수(19), 목(20), 금(21)
   final List<String> dayLabels = [
     "월(17)",
     "화(18)",
@@ -56,18 +49,16 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
     "금(21)",
   ];
 
-  // 교시별 실제 시작 시각 매핑 (알림 예약용)
   final Map<int, List<int>> periodStartTimeMap = {
-    1: [9, 10],   // 1교시 → 09:10
-    2: [10, 10],  // 2교시 → 10:10
-    3: [11, 10],  // 3교시 → 11:10
-    4: [12, 10],  // 4교시 → 12:10
-    5: [13, 10],  // 5교시 → 13:10
-    6: [14, 50],  // 6교시 → 14:50
-    7: [15, 50],  // 7교시 → 15:50
+    1: [9, 10],
+    2: [10, 10],
+    3: [11, 10],
+    4: [12, 10],
+    5: [13, 10],
+    6: [14, 50],
+    7: [15, 50],
   };
 
-  // 행(셀) 높이 고정값 (사용자가 조절하지 않음)
   final double cellHeight = 65.0;
 
   @override
@@ -79,7 +70,6 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
     fetchTimetable();
   }
 
-  /// 오늘 날짜 API 호출 ("2025-03-25" 형태 → "03월 25일")
   Future<void> fetchCurrentDate() async {
     try {
       final response = await http.get(
@@ -88,7 +78,7 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data is Map && data.containsKey("current_date")) {
-          String rawDate = data["current_date"]; // 예: "2025-03-25"
+          String rawDate = data["current_date"];
           if (rawDate.contains("-")) {
             final splitted = rawDate.split("-");
             if (splitted.length == 3) {
@@ -122,9 +112,6 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
     }
   }
 
-  /// 시간표 API 호출
-  /// 예시 JSON: { "period": "1", "subjects": ["실용 국어", "진로활동", ...] }
-  /// → subjects[0]=월, [1]=화, [2]=수, [3]=목, [4]=금
   Future<void> fetchTimetable() async {
     setState(() {
       isLoading = true;
@@ -138,20 +125,18 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
       if (response.statusCode == 200) {
         final dynamic jsonData = json.decode(response.body);
 
-        // 초기화
         timetableData = List.generate(
           5,
               (_) => List.generate(7, (_) => ""),
         );
 
-        // 예) [ { "period":"1", "subjects":["실용 국어", "진로활동", ...] }, ... ]
         if (jsonData is List) {
           for (var item in jsonData) {
             final periodStr = item["period"]?.toString() ?? "";
             int? pIndex = int.tryParse(periodStr);
             if (pIndex != null && pIndex >= 1 && pIndex <= 7) {
               final subjects = item["subjects"];
-              int periodIndex = pIndex - 1; // 1교시 → index 0
+              int periodIndex = pIndex - 1;
               if (subjects is List) {
                 for (int dayIndex = 0; dayIndex < 5; dayIndex++) {
                   if (dayIndex < subjects.length) {
@@ -173,9 +158,8 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
     }
   }
 
-  /// 오늘 요일 인덱스 (월:0, 화:1, 수:2, 목:3, 금:4; 주말이면 -1)
   int getTodayIndex() {
-    final w = DateTime.now().weekday; // 1(월) ~ 7(일)
+    final w = DateTime.now().weekday;
     if (w >= 1 && w <= 5) {
       return w - 1;
     } else {
@@ -183,31 +167,38 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
     }
   }
 
-  /// AppBar - 뒤로가기 버튼 제거, 설정 아이콘
   AppBar _buildAppBar() {
     return AppBar(
+      backgroundColor: Colors.white,
       automaticallyImplyLeading: false,
       title: Text(
         "곤시간표",
         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
       ),
-      actions: [],
+      actions: [
+        IconButton(
+          icon: Icon(Icons.settings),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SettingsWindow()),
+            );
+          },
+        ),
+      ],
     );
   }
 
-  /// 상단 영역 - 날짜, 학년·반 선택 (셀 크기 슬라이더 제거)
   Widget _buildTopArea() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          // 오늘 날짜 표시
           Text(
             currentDate,
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 10),
-          // 학년, 반 선택
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -250,8 +241,6 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
     );
   }
 
-  /// 시간표 표 (월~금 5열, 1~7교시 7행)
-  /// timetableData[dayIndex][pIndex]로 과목명 표시
   Widget _buildTimetableTable() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -269,7 +258,6 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
           5: FixedColumnWidth(55),
         },
         children: [
-          // 헤더 행 (교시, 월(17), 화(18), 수(19), 목(20), 금(21))
           TableRow(
             decoration: BoxDecoration(color: Colors.grey[200]),
             children: [
@@ -286,17 +274,14 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
                 ),
             ],
           ),
-          // 실제 교시별 행 (7행)
           for (int pIndex = 0; pIndex < 7; pIndex++)
             TableRow(
               children: [
-                // 교시 라벨
                 Container(
                   height: cellHeight,
                   alignment: Alignment.center,
                   child: Text(periodLabels[pIndex]),
                 ),
-                // 월~금 5칸
                 for (int dIndex = 0; dIndex < 5; dIndex++)
                   Container(
                     height: cellHeight,
@@ -314,18 +299,15 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
     );
   }
 
-  /// 하단 네비게이션 바 (시간표, 급식, 학사일정)
   Widget _buildBottomNavBar() {
     return Container(
       height: 60,
       color: Colors.blueGrey[50],
       child: Row(
         children: [
-          // 시간표 버튼 (눌린 효과만)
           Expanded(
             child: InkWell(
               onTap: () {
-                // 아무 기능 없음
               },
               splashColor: Colors.white.withOpacity(0.3),
               child: Container(
@@ -336,7 +318,6 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
               ),
             ),
           ),
-          // 급식 버튼: MealScreen으로 이동
           Expanded(
             child: InkWell(
               onTap: () {
@@ -359,7 +340,6 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
               ),
             ),
           ),
-          // 학사일정 버튼: SchoolSchedule으로 이동
           Expanded(
             child: InkWell(
               onTap: () {
@@ -390,10 +370,10 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(), // 뒤로가기 버튼 제거, 설정 아이콘 포함
+      appBar: _buildAppBar(),
       body: Column(
         children: [
-          _buildTopArea(), // 학년·반 선택, 오늘 날짜 표시
+          _buildTopArea(),
           if (isLoading)
             Expanded(child: Center(child: CircularProgressIndicator()))
           else
@@ -404,7 +384,7 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
                 ],
               ),
             ),
-          _buildBottomNavBar(), // 하단 네비게이션 바
+          _buildBottomNavBar(),
         ],
       ),
     );

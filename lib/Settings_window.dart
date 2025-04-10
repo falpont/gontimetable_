@@ -1,65 +1,90 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'highschool_timetable.dart';
+import 'select_page.dart';
 
-// IMPORTANT: Replace the placeholders with your actual FCM server key and your device's FCM token.
-// WARNING: Embedding your server key in client-side code is insecure and is only for testing purposes.
-
-const String serverKey = '104662925469255792711';
-const String deviceToken = 'd83HKyQjlEt_qbxK3lWcla:APA91bGRbldWtXS9JjvIEnQ_bRD6qkjyJHTPZYfdsafWaH3BEPqdsJCSjRkKM9mNVwd4zioLj3Quk3KTwdEEf-AzMEwiD5iDCNVnCM8gehZrU1Sc9mC1nlY';
-
-class SettingsWindow extends StatelessWidget {
+class SettingsWindow extends StatefulWidget {
   const SettingsWindow({Key? key}) : super(key: key);
 
-  Future<void> sendTestFCM() async {
-    final url = Uri.parse('https://fcm.googleapis.com/fcm/send');
-    final headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'key=$serverKey',
-    };
-    final body = json.encode({
-      'to': deviceToken,
-      'notification': {
-        'title': 'Test Notification',
-        'body': 'This is a test alarm via FCM',
-      },
-      'data': {
-        'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-        'status': 'done',
-      },
-    });
+  @override
+  _SettingsWindowState createState() => _SettingsWindowState();
+}
 
-    try {
-      final response = await http.post(url, headers: headers, body: body);
-      if (response.statusCode == 200) {
-        print('Test FCM sent successfully: ${response.body}');
-      } else {
-        print('Failed to send FCM: ${response.statusCode}, ${response.body}');
-      }
-    } catch (e) {
-      print('Error sending FCM: $e');
-    }
+class _SettingsWindowState extends State<SettingsWindow> {
+  String selectedGrade = "1";
+  String selectedClass = "1";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedSettings();
+  }
+
+  Future<void> _loadSavedSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedGrade = prefs.getString('savedGrade') ?? "1";
+      selectedClass = prefs.getString('savedClass') ?? "1";
+    });
+  }
+
+  Future<void> _saveSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('savedGrade', selectedGrade);
+    await prefs.setString('savedClass', selectedClass);
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HighSchoolTimetable(
+          grade: selectedGrade,
+          classNum: selectedClass,
+        ),
+      ),
+      (Route<dynamic> route) => false,
+    );
+  }
+
+  Future<void> _resetSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('savedGrade');
+    await prefs.remove('savedClass');
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+          builder: (context) => GradeClassSelectionScreen()),
+      (Route<dynamic> route) => false,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: const Text("설정"),
       ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () async {
-            await sendTestFCM();
-          },
-          child: const Text('Send Test FCM'),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const Text(
+              "학년 및 반 재설정",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _resetSettings,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              child: const Text(
+                "학년/반 선택 화면으로 이동",
+                style: TextStyle(fontSize: 16, color: Colors.white),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
-
-// If you want to run this screen as your main app for testing, you can use the following main function:
-// void main() {
-//   runApp(MaterialApp(home: SettingsWindow()));
-// }

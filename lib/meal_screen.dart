@@ -18,7 +18,6 @@ class MealScreen extends StatefulWidget {
 class _MealScreenState extends State<MealScreen> {
   bool isLoading = false;
   List<Map<String, String>> weeklyMeals = [];
-  // 오늘 날짜 (정렬 & 카드 색상 표시용)
   String _todayRaw = "";
 
   @override
@@ -38,20 +37,16 @@ class _MealScreenState extends State<MealScreen> {
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         if (jsonData is List) {
-          // 오늘 날짜를 "YYYY-MM-DD" 형태로 보관
           DateTime now = DateTime.now();
-          _todayRaw =
-          "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+          _todayRaw = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
 
           List<Map<String, String>> meals = [];
           for (var item in jsonData) {
-            // 예) "date": "20250317"
             String rawDate = item["date"] ?? "";
             String mealContent = item["meal"]?.toString() ?? "급식 정보 없음";
 
-            // 날짜 변환: YYYYMMDD → "3월 17일 (금)" 형식
             String formattedDate = rawDate;
-            String dateTimeString = ""; // 정렬, 오늘 급식 판별용
+            String dateTimeString = "";
 
             if (rawDate.length == 8) {
               String yearStr = rawDate.substring(0, 4);
@@ -67,7 +62,6 @@ class _MealScreenState extends State<MealScreen> {
               String weekdayStr = weekdays[dt.weekday - 1];
 
               formattedDate = "${month}월 ${day}일 ($weekdayStr)";
-              // 정렬용: "YYYY-MM-DD"
               dateTimeString = "$yearStr-$monthStr-$dayStr";
             }
 
@@ -79,7 +73,6 @@ class _MealScreenState extends State<MealScreen> {
             });
           }
 
-          // 오늘 급식이 가장 위로 오도록 정렬
           meals.sort((a, b) {
             String aDate = a["dateTime"] ?? "";
             String bDate = b["dateTime"] ?? "";
@@ -104,7 +97,6 @@ class _MealScreenState extends State<MealScreen> {
     }
   }
 
-  /// AppBar (설정 버튼 + "오늘의 급식" 제목, Bold 처리)
   AppBar _buildAppBar() {
     return AppBar(
       automaticallyImplyLeading: false,
@@ -114,29 +106,25 @@ class _MealScreenState extends State<MealScreen> {
           icon: Icon(Icons.settings),
           onPressed: () {
             Navigator.pushReplacement(context,
-                MaterialPageRoute(
+              MaterialPageRoute(
                 builder: (context) => SettingsWindow(),
-                ),
+              ),
             );
-            // TODO: 설정 페이지 이동
           },
         ),
       ],
     );
   }
 
-  /// 하단 네비게이션 바 (시간표, 급식, 학사일정)
   Widget _buildBottomNavBar() {
     return Container(
       height: 60,
       color: Colors.blueGrey[50],
       child: Row(
         children: [
-          // 시간표 버튼: 알림시계 아이콘
           Expanded(
             child: InkWell(
               onTap: () {
-                // 시간표 화면으로 이동
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -160,12 +148,9 @@ class _MealScreenState extends State<MealScreen> {
               ),
             ),
           ),
-          // 급식 버튼: 현재 페이지
           Expanded(
             child: InkWell(
-              onTap: () {
-                // 현재 페이지
-              },
+              onTap: () {},
               splashColor: Colors.white.withOpacity(0.3),
               child: Container(
                 color: Colors.blueAccent,
@@ -179,7 +164,6 @@ class _MealScreenState extends State<MealScreen> {
               ),
             ),
           ),
-          // 학사일정 버튼
           Expanded(
             child: InkWell(
               onTap: () {
@@ -212,7 +196,6 @@ class _MealScreenState extends State<MealScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 상단에 설정 버튼 + "오늘의 급식" 제목
       appBar: _buildAppBar(),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
@@ -223,7 +206,6 @@ class _MealScreenState extends State<MealScreen> {
           bool isToday = (mealData["dateTime"] == _todayRaw);
 
           return Card(
-            // 오늘 급식이면 하늘색 배경
             color: isToday ? Colors.lightBlue[50] : null,
             margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             child: Padding(
@@ -231,7 +213,6 @@ class _MealScreenState extends State<MealScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 날짜 + 오늘의 급식
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -247,7 +228,6 @@ class _MealScreenState extends State<MealScreen> {
                     ],
                   ),
                   SizedBox(height: 8),
-                  // 급식 내용
                   Text(
                     mealData["meal"] ?? "",
                     style: TextStyle(
@@ -261,7 +241,6 @@ class _MealScreenState extends State<MealScreen> {
           );
         },
       ),
-      // 하단 네비게이션 바
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }
