@@ -117,8 +117,12 @@ class _MealScreenState extends State<MealScreen> {
   }
 
   Widget _buildBottomNavBar() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    double navBarHeight = screenHeight * 0.08;
+    if (navBarHeight < 60) navBarHeight = 60;
+
     return Container(
-      height: 60,
+      height: navBarHeight,
       color: Colors.blueGrey[50],
       child: Row(
         children: [
@@ -142,7 +146,7 @@ class _MealScreenState extends State<MealScreen> {
                   child: Icon(
                     Icons.access_alarm,
                     color: Colors.white,
-                    size: 28,
+                    size: navBarHeight * 0.5,
                   ),
                 ),
               ),
@@ -150,7 +154,9 @@ class _MealScreenState extends State<MealScreen> {
           ),
           Expanded(
             child: InkWell(
-              onTap: () {},
+              onTap: () {
+                  //페이지 추가할거면 여기다가 하면 된다.
+              },
               splashColor: Colors.white.withOpacity(0.3),
               child: Container(
                 color: Colors.blueAccent,
@@ -158,7 +164,7 @@ class _MealScreenState extends State<MealScreen> {
                   child: Icon(
                     Icons.fastfood,
                     color: Colors.white,
-                    size: 28,
+                    size: navBarHeight * 0.5,
                   ),
                 ),
               ),
@@ -169,10 +175,12 @@ class _MealScreenState extends State<MealScreen> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => SchoolSchedule(
-                    grade: widget.grade,
-                    classNum: widget.classNum,
-                  )),
+                  MaterialPageRoute(
+                    builder: (context) => SchoolSchedule(
+                      grade: widget.grade,
+                      classNum: widget.classNum,
+                    ),
+                  ),
                 );
               },
               splashColor: Colors.white.withOpacity(0.3),
@@ -182,7 +190,7 @@ class _MealScreenState extends State<MealScreen> {
                   child: Icon(
                     Icons.calendar_today,
                     color: Colors.white,
-                    size: 28,
+                    size: navBarHeight * 0.5,
                   ),
                 ),
               ),

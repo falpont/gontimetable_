@@ -173,7 +173,7 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
       automaticallyImplyLeading: false,
       title: Text(
         "곤시간표",
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
+        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28),
       ),
       actions: [
         IconButton(
@@ -242,6 +242,22 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
   }
 
   Widget _buildTimetableTable() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isTablet = screenWidth >= 700;
+    final double scale = isTablet ? 1.8 : 0.9; // iPad에서는 2배, iPhone에서는 1배
+
+    final double baseFirstColumnWidth = 80.0;
+    final double baseOtherColumnWidth = 68.0;
+    final double baseCellHeight = 65.0;
+
+    final double firstColWidth = baseFirstColumnWidth * scale;
+    final double otherColWidth = baseOtherColumnWidth * scale;
+    final double cellHeight = baseCellHeight * scale;
+
+    // 기본 글자 크기를 scale에 따라 조정 (헤더와 셀을 별도로 지정)
+    final double headerFontSize = 16.0 * scale;
+    final double cellFontSize = 14.0 * scale;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Table(
@@ -250,12 +266,12 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
           outside: BorderSide(color: Colors.grey.shade400),
         ),
         columnWidths: {
-          0: FixedColumnWidth(68),
-          1: FixedColumnWidth(55),
-          2: FixedColumnWidth(55),
-          3: FixedColumnWidth(55),
-          4: FixedColumnWidth(55),
-          5: FixedColumnWidth(55),
+          0: FixedColumnWidth(firstColWidth),
+          1: FixedColumnWidth(otherColWidth),
+          2: FixedColumnWidth(otherColWidth),
+          3: FixedColumnWidth(otherColWidth),
+          4: FixedColumnWidth(otherColWidth),
+          5: FixedColumnWidth(otherColWidth),
         },
         children: [
           TableRow(
@@ -264,13 +280,25 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
               Container(
                 height: cellHeight,
                 alignment: Alignment.center,
-                child: Text("교시", style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  "교시",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: headerFontSize,
+                  ),
+                ),
               ),
               for (int i = 0; i < dayLabels.length; i++)
                 Container(
                   height: cellHeight,
                   alignment: Alignment.center,
-                  child: Text(dayLabels[i], style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text(
+                    dayLabels[i],
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: headerFontSize,
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -280,7 +308,10 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
                 Container(
                   height: cellHeight,
                   alignment: Alignment.center,
-                  child: Text(periodLabels[pIndex]),
+                  child: Text(
+                    periodLabels[pIndex],
+                    style: TextStyle(fontSize: cellFontSize),
+                  ),
                 ),
                 for (int dIndex = 0; dIndex < 5; dIndex++)
                   Container(
@@ -290,6 +321,7 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
                       timetableData[dIndex][pIndex].isEmpty
                           ? "-"
                           : timetableData[dIndex][pIndex],
+                      style: TextStyle(fontSize: cellFontSize),
                     ),
                   ),
               ],
@@ -299,21 +331,33 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
     );
   }
 
+
+
+
   Widget _buildBottomNavBar() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    double navBarHeight = screenHeight * 0.08;
+    if (navBarHeight < 60) navBarHeight = 60;
+
     return Container(
-      height: 60,
+      height: navBarHeight,
       color: Colors.blueGrey[50],
       child: Row(
         children: [
           Expanded(
             child: InkWell(
               onTap: () {
+                  //추가할거면 여기다가 해 병신아.
               },
               splashColor: Colors.white.withOpacity(0.3),
               child: Container(
                 color: Colors.lightBlue,
                 child: Center(
-                  child: Icon(Icons.access_alarm, color: Colors.white, size: 28),
+                  child: Icon(
+                    Icons.access_alarm,
+                    color: Colors.white,
+                    size: navBarHeight * 0.5,
+                  ),
                 ),
               ),
             ),
@@ -321,12 +365,12 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
           Expanded(
             child: InkWell(
               onTap: () {
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => MealScreen(
-                      grade: selectedGrade,
-                      classNum: selectedClass,
+                      grade: widget.grade,
+                      classNum: widget.classNum,
                     ),
                   ),
                 );
@@ -335,7 +379,11 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
               child: Container(
                 color: Colors.blueAccent,
                 child: Center(
-                  child: Icon(Icons.fastfood, color: Colors.white, size: 28),
+                  child: Icon(
+                    Icons.fastfood,
+                    color: Colors.white,
+                    size: navBarHeight * 0.5,
+                  ),
                 ),
               ),
             ),
@@ -347,8 +395,8 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => SchoolSchedule(
-                      grade: selectedGrade,
-                      classNum: selectedClass,
+                      grade: widget.grade,
+                      classNum: widget.classNum,
                     ),
                   ),
                 );
@@ -357,7 +405,11 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
               child: Container(
                 color: Colors.lightBlue,
                 child: Center(
-                  child: Icon(Icons.calendar_today, color: Colors.white, size: 28),
+                  child: Icon(
+                    Icons.calendar_today,
+                    color: Colors.white,
+                    size: navBarHeight * 0.5,
+                  ),
                 ),
               ),
             ),

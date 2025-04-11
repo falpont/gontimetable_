@@ -107,14 +107,16 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
 
   /// 캘린더 UI (월~금만 표시)
   Widget _buildCalendar() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isTablet = screenWidth >= 700;
+    final double aspectRatio = isTablet ? 1.2 : 0.8;
+    final double textScale = isTablet ? 1.7 : 1.0; // 아이패드이면 1.3배
+
     final now = DateTime.now();
     final year = now.year;
     final currentMonthDays = _daysInMonth(year, selectedMonth);
-
-    // 평일 데이터 계산
     final List<Map<String, dynamic>> calendarCells = [];
 
-    // 1. 첫 날이 월요일이 아니면 전월 평일 채우기
     final firstDay = DateTime(year, selectedMonth, 1);
     final offset = firstDay.weekday - 1;
     if (offset > 0) {
@@ -127,7 +129,6 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
         prevYear = year;
       }
       final daysInPrevMonth = _daysInMonth(prevYear, prevMonth);
-
       final List<int> prevWeekdays = [];
       int d = daysInPrevMonth;
       while (prevWeekdays.length < offset && d > 0) {
@@ -142,7 +143,6 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
       }
     }
 
-    // 2. 현재 달의 평일만 추가
     for (int d = 1; d <= currentMonthDays; d++) {
       final dt = DateTime(year, selectedMonth, d);
       if (dt.weekday >= 1 && dt.weekday <= 5) {
@@ -154,42 +154,45 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
       }
     }
 
-    // 3. 마지막 행 맞추기
     while (calendarCells.length % 5 != 0) {
       final nextDay = (calendarCells.length % 5) + 1;
       calendarCells.add({"day": nextDay, "isCurrent": false});
     }
 
+    // 헤더와 셀의 글자 크기 설정 (아이패드인 경우에만 배율 적용)
+    final double headerFontSize = 16 * textScale;
+    final double cellFontSize = 14 * textScale;
+    final double eventTextFontSize = 12 * textScale;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
       child: Column(
         children: [
-          // 헤더 (월, 화, 수, 목, 금)
           Row(
-            children: ["월", "화", "수", "목", "금"]
-                .map(
-                  (day) => Expanded(
+            children: ["월", "화", "수", "목", "금"].map((day) {
+              return Expanded(
                 child: Container(
                   alignment: Alignment.center,
                   child: Text(
                     day,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: headerFontSize,
+                    ),
                   ),
                 ),
-              ),
-            )
-                .toList(),
+              );
+            }).toList(),
           ),
           const SizedBox(height: 5),
-          // 평일 그리드
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 5,
               mainAxisSpacing: 4,
               crossAxisSpacing: 4,
-              childAspectRatio: 0.8,
+              childAspectRatio: aspectRatio,
             ),
             itemCount: calendarCells.length,
             itemBuilder: (context, index) {
@@ -200,18 +203,13 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
               bool hasEvent = false;
               String eventName = "";
               if (isCurrent) {
-                // 이벤트 매핑
                 hasEvent = eventsMap.containsKey(dayNum);
                 if (hasEvent) {
                   eventName = eventsMap[dayNum]!;
                 }
               }
               return InkWell(
-                onTap: isCurrent
-                    ? () {
-                  _showDaySchedule(dayNum, eventName);
-                }
-                    : null,
+                onTap: isCurrent ? () { _showDaySchedule(dayNum, eventName); } : null,
                 child: Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey.shade300),
@@ -230,6 +228,7 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: isCurrent ? Colors.black : Colors.grey,
+                          fontSize: cellFontSize,
                         ),
                       ),
                       if (hasEvent)
@@ -238,7 +237,11 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
                           color: Colors.red.shade100,
                           child: Text(
                             eventName,
-                            style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: eventTextFontSize,
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -254,19 +257,45 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
   }
 
   void _showDaySchedule(int dayNum, String eventName) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isTablet = screenWidth >= 700;
+    final double titleFontSize = isTablet ? 36 : 16;
+    final double contentFontSize = isTablet ? 30 : 16;
+    final double buttonFontSize = isTablet ? 24 : 16;
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("$selectedMonth월 $dayNum일 일정", style: const TextStyle(fontWeight: FontWeight.bold)),
-          content: Text(
-            eventName.isNotEmpty ? eventName : "해당 날짜의 일정이 없습니다.",
-            style: const TextStyle(fontSize: 16),
+          titlePadding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
+          contentPadding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
+          title: Text(
+            "$selectedMonth월 $dayNum일 일정",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: titleFontSize,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: isTablet ? 400 : 300,
+              minHeight: isTablet ? 200 : 150,
+            ),
+            child: Text(
+              eventName.isNotEmpty ? eventName : "해당 날짜의 일정이 없습니다.",
+              style: TextStyle(fontSize: contentFontSize),
+              textAlign: TextAlign.center,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("닫기"),
+              child: Text(
+                "닫기",
+                style: TextStyle(fontSize: buttonFontSize),
+                textAlign: TextAlign.center,
+              ),
             ),
           ],
         );
@@ -279,75 +308,82 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
     double navBarHeight = screenHeight * 0.08;
     if (navBarHeight < 60) navBarHeight = 60;
 
-    return SafeArea(
-      child: Container(
-        height: navBarHeight,
-        color: Colors.blueGrey[50],
-        child: Row(
-          children: [
-            // 시간표 버튼
-            Expanded(
-              child: InkWell(
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HighSchoolTimetable(
-                        grade: widget.grade,
-                        classNum: widget.classNum,
-                      ),
+    return Container(
+      height: navBarHeight,
+      color: Colors.blueGrey[50],
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HighSchoolTimetable(
+                      grade: widget.grade,
+                      classNum: widget.classNum,
                     ),
-                  );
-                },
-                splashColor: Colors.white.withOpacity(0.3),
-                child: Container(
-                  color: Colors.lightBlue,
-                  child: const Center(
-                    child: Icon(Icons.access_alarm, color: Colors.white, size: 28),
+                  ),
+                );
+              },
+              splashColor: Colors.white.withOpacity(0.3),
+              child: Container(
+                color: Colors.lightBlue,
+                child: Center(
+                  child: Icon(
+                    Icons.access_alarm,
+                    color: Colors.white,
+                    size: navBarHeight * 0.5,
                   ),
                 ),
               ),
             ),
-            // 급식 버튼
-            Expanded(
-              child: InkWell(
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MealScreen(
-                        grade: widget.grade,
-                        classNum: widget.classNum,
-                      ),
+          ),
+          Expanded(
+            child: InkWell(
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MealScreen(
+                      grade: widget.grade,
+                      classNum: widget.classNum,
                     ),
-                  );
-                },
-                splashColor: Colors.white.withOpacity(0.3),
-                child: Container(
-                  color: Colors.blueAccent,
-                  child: const Center(
-                    child: Icon(Icons.fastfood, color: Colors.white, size: 28),
+                  ),
+                );
+              },
+              splashColor: Colors.white.withOpacity(0.3),
+              child: Container(
+                color: Colors.blueAccent,
+                child: Center(
+                  child: Icon(
+                    Icons.fastfood,
+                    color: Colors.white,
+                    size: navBarHeight * 0.5,
                   ),
                 ),
               ),
             ),
-            // 학사일정 버튼
-            Expanded(
-              child: InkWell(
-                onTap: () {
-                  // 현재 페이지이므로 동작 없음
+          ),
+          Expanded(
+            child: InkWell(
+              onTap: () {
+                // 페이지 이동 추가할거면 여기다가 하면 된다.
                 },
-                splashColor: Colors.white.withOpacity(0.3),
-                child: Container(
-                  color: Colors.lightBlue,
-                  child: const Center(
-                    child: Icon(Icons.calendar_today, color: Colors.white, size: 28),
+              splashColor: Colors.white.withOpacity(0.3),
+              child: Container(
+                color: Colors.lightBlue,
+                child: Center(
+                  child: Icon(
+                    Icons.calendar_today,
+                    color: Colors.white,
+                    size: navBarHeight * 0.5,
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
