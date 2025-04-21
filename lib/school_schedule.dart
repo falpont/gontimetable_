@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gontimetable/PersonalTimetable.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'meal_screen.dart';
@@ -6,10 +7,18 @@ import 'highschool_timetable.dart';
 import 'Settings_window.dart';
 
 class SchoolSchedule extends StatefulWidget {
-  final String grade;
-  final String classNum;
+  final int grade;
+  final int classNum;
+  final bool isPersonal;
+  final Map<String, String>? selectedSections;
 
-  const SchoolSchedule({Key? key, required this.grade, required this.classNum}) : super(key: key);
+  const SchoolSchedule({
+    Key? key,
+    required this.grade,
+    required this.classNum,
+    this.isPersonal = false,
+    this.selectedSections,
+  }) : super(key: key);
 
   @override
   _SchoolScheduleState createState() => _SchoolScheduleState();
@@ -172,7 +181,7 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
             children: ["월", "화", "수", "목", "금"].map((day) {
               return Expanded(
                 child: Container(
-                  alignment: Alignment.center,
+                  alignment: Alignment.topCenter,
                   child: Text(
                     day,
                     style: TextStyle(
@@ -221,8 +230,8 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
                   ),
                   alignment: Alignment.center,
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Day number at top
                       Text(
                         "$dayNum",
                         style: TextStyle(
@@ -231,8 +240,12 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
                           fontSize: cellFontSize,
                         ),
                       ),
+                      // Fill remaining space
+                      Expanded(child: SizedBox(width: 1,)),
+                      // Event label at bottom
                       if (hasEvent)
                         Container(
+                          margin: const EdgeInsets.fromLTRB(0, 4.0, 0, 11.0),
                           padding: const EdgeInsets.all(2),
                           color: Colors.red.shade100,
                           child: Text(
@@ -316,15 +329,28 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
           Expanded(
             child: InkWell(
               onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => HighSchoolTimetable(
-                      grade: widget.grade,
-                      classNum: widget.classNum,
+                if (widget.isPersonal) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PersonalTimetable(
+                        grade: widget.grade,
+                        classNum: widget.classNum,
+                        selectedSections: widget.selectedSections ?? {},
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } else {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => HighSchoolTimetable(
+                        grade: widget.grade,
+                        classNum: widget.classNum,
+                      ),
+                    ),
+                  );
+                }
               },
               splashColor: Colors.white.withOpacity(0.3),
               child: Container(
@@ -348,6 +374,8 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
                     builder: (context) => MealScreen(
                       grade: widget.grade,
                       classNum: widget.classNum,
+                      isPersonal: widget.isPersonal,
+                      selectedSections: widget.selectedSections,
                     ),
                   ),
                 );
@@ -368,8 +396,8 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
           Expanded(
             child: InkWell(
               onTap: () {
-                // 페이지 이동 추가할거면 여기다가 하면 된다.
-                },
+                //추가 할거면 여기에추가.
+              },
               splashColor: Colors.white.withOpacity(0.3),
               child: Container(
                 color: Colors.lightBlue,
@@ -398,7 +426,11 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
         iconTheme: const IconThemeData(color: Colors.black),
         title: const Text(
           "학사 일정",
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 28
+          ),
         ),
         centerTitle: true,
         actions: [
@@ -407,7 +439,14 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SettingsWindow()),
+                MaterialPageRoute(
+                  builder: (context) => SettingsWindow(
+                    grade: widget.grade,
+                    classNum: widget.classNum,
+                    isPersonal: widget.isPersonal,
+                    selectedSections: widget.selectedSections,
+                  ),
+                ),
               );
             },
           ),

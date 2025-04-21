@@ -1,17 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'highschool_timetable.dart';
+import 'package:gontimetable/PersonalTimetable.dart';
+import 'package:gontimetable/highschool_timetable.dart';
 import 'select_page.dart';
+import 'dart:convert';
 
 class SettingsWindow extends StatefulWidget {
-  const SettingsWindow({super.key});
+  final int grade;
+  final int classNum;
+  final bool isPersonal;
+  final Map<String, String>? selectedSections;
+
+  const SettingsWindow({
+    Key? key,
+    required this.grade,
+    required this.classNum,
+    this.isPersonal = false,
+    this.selectedSections,
+  }) : super(key: key);
+
   @override
   _SettingsWindowState createState() => _SettingsWindowState();
 }
 
 class _SettingsWindowState extends State<SettingsWindow> {
-  String selectedGrade = "1";
-  String selectedClass = "1";
+  int selectedGrade = 1;
+  int selectedClass = 1;
 
   @override
   void initState() {
@@ -22,25 +36,46 @@ class _SettingsWindowState extends State<SettingsWindow> {
   Future<void> _loadSavedSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      selectedGrade = (prefs.getInt('savedGrade')?.toString()) ?? "1";
-      selectedClass = (prefs.getInt('savedClass')?.toString()) ?? "1";
+      selectedGrade = prefs.getInt('savedGrade') ?? 1;
+      selectedClass = prefs.getInt('savedClass') ?? 1;
     });
   }
 
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('savedGrade', selectedGrade);
-    await prefs.setString('savedClass', selectedClass);
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HighSchoolTimetable(
-          grade: selectedGrade,
-          classNum: selectedClass,
+    await prefs.setInt('savedGrade', selectedGrade);
+    await prefs.setInt('savedClass', selectedClass);
+    final rawSections = prefs.getString('savedSelectedSections');
+    if (rawSections != null) {
+      final Map<String, dynamic> jsonMap = json.decode(rawSections) as Map<String, dynamic>;
+      final Map<String, String> selectedSections = {
+        for (var e in jsonMap.entries) e.key: e.value.toString()
+      };
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PersonalTimetable(
+            grade: selectedGrade,
+            classNum: selectedClass,
+            selectedSections: selectedSections,
+          ),
         ),
-      ),
-          (Route<dynamic> route) => false,
-    );
+        (route) => false,
+      );
+    } else {
+      // Remove any previously saved personal timetable selections
+      await prefs.remove('savedSelectedSections');
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => HighSchoolTimetable(
+            grade: selectedGrade,
+            classNum: selectedClass,
+          ),
+        ),
+        (route) => false
+      );
+    }
   }
 
   Future<void> _resetSettings() async {
@@ -92,7 +127,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
             SizedBox(height: screenHeight * 0.015),
             Text("20515성승현", style: TextStyle(fontSize: 16 * scale), textAlign: TextAlign.center),
             SizedBox(height: screenHeight * 0.015),
-            Text("이 앱은 아직 미완성입니다.", style: TextStyle(fontSize: 16 * scale), textAlign: TextAlign.center),
+            Text("아직 미완성인 앱입니다.", style: TextStyle(fontSize: 16 * scale), textAlign: TextAlign.center),
             SizedBox(height: screenHeight * 0.015),
             Text("문제점, 오류 전부 보내주세요.", style: TextStyle(fontSize: 16 * scale), textAlign: TextAlign.center),
             SizedBox(height: screenHeight * 0.015),

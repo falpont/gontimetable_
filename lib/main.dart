@@ -1,10 +1,12 @@
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/material.dart';
-import 'package:gontimetable/highschool_timetable.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'select_page.dart';
+import 'package:gontimetable/select_page.dart';
+import 'package:gontimetable/highschool_timetable.dart';
+import 'package:gontimetable/PersonalTimetable.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Background message received: ${message.notification?.title}");
@@ -47,6 +49,7 @@ class _MyAppState extends State<MyApp> {
     final prefs = await SharedPreferences.getInstance();
     final dynamic rawGrade = prefs.get('savedGrade');
     final dynamic rawClass = prefs.get('savedClass');
+    final String? rawSections = prefs.getString('savedSelectedSections');
 
     final int? savedGrade = rawGrade is int
         ? rawGrade
@@ -55,11 +58,29 @@ class _MyAppState extends State<MyApp> {
         ? rawClass
         : (rawClass is String ? int.tryParse(rawClass) : null);
 
-    if (savedGrade != null && savedClass != null) {
+    if (savedGrade != null
+        && savedClass != null
+        && rawSections != null
+        && rawSections.trim().isNotEmpty
+        && rawSections.trim() != '{}') {
+      final Map<String, dynamic> jsonMap = json.decode(rawSections) as Map<String, dynamic>;
+      final Map<String, String> selectedSections = jsonMap.map(
+        (k, v) => MapEntry(k, v.toString()),
+      );
+      if (selectedSections.isNotEmpty) {
+        setState(() {
+          _defaultScreen = PersonalTimetable(
+            grade: savedGrade,
+            classNum: savedClass,
+            selectedSections: selectedSections,
+          );
+        });
+      }
+    } else if (savedGrade != null && savedClass != null) {
       setState(() {
         _defaultScreen = HighSchoolTimetable(
-          grade: "$savedGrade",
-          classNum: "$savedClass",
+          grade: savedGrade,
+          classNum: savedClass,
         );
       });
     } else {

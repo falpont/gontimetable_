@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:gontimetable/school_schedule.dart';
+import 'package:gontimetable/PersonalTimetable.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'meal_screen.dart';
 import 'Settings_window.dart';
 
 class HighSchoolTimetable extends StatefulWidget {
-  final String grade;
-  final String classNum;
+  final int grade;
+  final int classNum;
+  final bool isPersonal;
+  final Map<String, String>? selectedSections;
 
   const HighSchoolTimetable({
     Key? key,
     required this.grade,
     required this.classNum,
+    this.isPersonal = false,
+    this.selectedSections,
   }) : super(key: key);
 
   @override
@@ -20,8 +25,8 @@ class HighSchoolTimetable extends StatefulWidget {
 }
 
 class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
-  late String selectedGrade;
-  late String selectedClass;
+  late int selectedGrade;
+  late int selectedClass;
 
   String currentDate = "불러오는 중...";
   bool isLoading = false;
@@ -41,13 +46,15 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
     "7(15:50)",
   ];
 
-  final List<String> dayLabels = [
-    "월(17)",
-    "화(18)",
-    "수(19)",
-    "목(20)",
-    "금(21)",
-  ];
+  List<String> get dayLabels {
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    const names = ['월','화','수','목','금'];
+    return List.generate(5, (i) {
+      final d = monday.add(Duration(days: i));
+      return '${names[i]}(${d.day})';
+    });
+  }
 
   final Map<int, List<int>> periodStartTimeMap = {
     1: [9, 10],
@@ -181,7 +188,14 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => SettingsWindow()),
+              MaterialPageRoute(
+                builder: (context) => SettingsWindow(
+                  grade: widget.grade,
+                  classNum: widget.classNum,
+                  isPersonal: widget.isPersonal,
+                  selectedSections: widget.selectedSections,
+                ),
+              ),
             );
           },
         ),
@@ -202,10 +216,13 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              DropdownButton<String>(
+              DropdownButton<int>(
                 value: selectedGrade,
-                items: ["1", "2", "3"]
-                    .map((g) => DropdownMenuItem(value: g, child: Text("$g학년")))
+                items: [1, 2, 3]
+                    .map((g) => DropdownMenuItem<int>(
+                          value: g,
+                          child: Text("$g학년"),
+                        ))
                     .toList(),
                 onChanged: (value) {
                   if (value != null) {
@@ -216,10 +233,13 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
                 },
               ),
               SizedBox(width: 20),
-              DropdownButton<String>(
+              DropdownButton<int>(
                 value: selectedClass,
-                items: ["1", "2", "3", "4", "5", "6"]
-                    .map((c) => DropdownMenuItem(value: c, child: Text("$c반")))
+                items: [1, 2, 3, 4, 5, 6]
+                    .map((c) => DropdownMenuItem<int>(
+                          value: c,
+                          child: Text("$c반"),
+                        ))
                     .toList(),
                 onChanged: (value) {
                   if (value != null) {
@@ -244,7 +264,7 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
   Widget _buildTimetableTable() {
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isTablet = screenWidth >= 700;
-    final double scale = isTablet ? 1.8 : 0.9; // iPad에서는 2배, iPhone에서는 1배
+    final double scale = isTablet ? 1.6  : 0.9; // iPad에서는 2배, iPhone에서는 1배
 
     final double baseFirstColumnWidth = 80.0;
     final double baseOtherColumnWidth = 68.0;
@@ -371,6 +391,8 @@ class _HighSchoolTimetableState extends State<HighSchoolTimetable> {
                     builder: (context) => MealScreen(
                       grade: widget.grade,
                       classNum: widget.classNum,
+                      isPersonal: widget.isPersonal,
+                      selectedSections: widget.selectedSections,
                     ),
                   ),
                 );

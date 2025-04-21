@@ -4,12 +4,22 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'highschool_timetable.dart';
 import 'school_schedule.dart';
+import 'PersonalTimetable.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MealScreen extends StatefulWidget {
-  final String grade;
-  final String classNum;
+  final int grade;
+  final int classNum;
+  final bool isPersonal;
+  final Map<String, String>? selectedSections;
 
-  const MealScreen({Key? key, required this.grade, required this.classNum}) : super(key: key);
+  const MealScreen({
+    Key? key,
+    required this.grade,
+    required this.classNum,
+    required this.isPersonal,
+    this.selectedSections,
+  }) : super(key: key);
 
   @override
   _MealScreenState createState() => _MealScreenState();
@@ -105,9 +115,15 @@ class _MealScreenState extends State<MealScreen> {
         IconButton(
           icon: Icon(Icons.settings),
           onPressed: () {
-            Navigator.pushReplacement(context,
+            Navigator.push(
+              context,
               MaterialPageRoute(
-                builder: (context) => SettingsWindow(),
+                builder: (context) => SettingsWindow(
+                  grade: widget.grade,
+                  classNum: widget.classNum,
+                  isPersonal: widget.isPersonal,
+                  selectedSections: widget.selectedSections,
+                ),
               ),
             );
           },
@@ -129,15 +145,28 @@ class _MealScreenState extends State<MealScreen> {
           Expanded(
             child: InkWell(
               onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => HighSchoolTimetable(
-                      grade: widget.grade,
-                      classNum: widget.classNum,
+                if (widget.isPersonal) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PersonalTimetable(
+                        grade: widget.grade,
+                        classNum: widget.classNum,
+                        selectedSections: widget.selectedSections ?? {},
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } else {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => HighSchoolTimetable(
+                        grade: widget.grade,
+                        classNum: widget.classNum,
+                      ),
+                    ),
+                  );
+                }
               },
               splashColor: Colors.white.withOpacity(0.3),
               child: Container(
@@ -179,6 +208,8 @@ class _MealScreenState extends State<MealScreen> {
                     builder: (context) => SchoolSchedule(
                       grade: widget.grade,
                       classNum: widget.classNum,
+                      isPersonal: widget.isPersonal,
+                      selectedSections: widget.selectedSections,
                     ),
                   ),
                 );
