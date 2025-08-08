@@ -127,7 +127,9 @@ class _SchoolScheduleState extends State<SchoolSchedule> {
     final List<Map<String, dynamic>> calendarCells = [];
 
     final firstDay = DateTime(year, selectedMonth, 1);
-    final offset = firstDay.weekday - 1;
+    final offset = (firstDay.weekday >= DateTime.monday && firstDay.weekday <= DateTime.friday)
+        ? firstDay.weekday - 1
+        : 0;
     if (offset > 0) {
       int prevMonth, prevYear;
       if (selectedMonth == 1) {

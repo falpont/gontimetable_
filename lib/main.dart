@@ -7,6 +7,7 @@ import 'package:gontimetable/highschool_timetable.dart';
 import 'package:gontimetable/PersonalTimetable.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Background message received: ${message.notification?.title}");
@@ -15,6 +16,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   runApp(
@@ -35,9 +37,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  Widget _defaultScreen = const Scaffold(
-    body: Center(child: CircularProgressIndicator()),
-  );
+  Widget _defaultScreen = const SpotlightIntroScreen();
 
   @override
   void initState() {
@@ -113,6 +113,40 @@ class _MyAppState extends State<MyApp> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class SpotlightIntroScreen extends StatelessWidget {
+  const SpotlightIntroScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.lightbulb_outline,
+                color: Color(0xFFFFD54F), // yellow color
+                size: 80,
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Spotlight',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF8D8D8D), // gray color
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
