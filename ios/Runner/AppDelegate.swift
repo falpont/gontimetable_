@@ -1,44 +1,36 @@
-import Flutter
+// ios/Runner/AppDelegate.swift
 import UIKit
-import Firebase
-import UserNotifications  // UNUserNotificationCenter를 사용하기 위해 추가
+import Flutter
 
 @main
-@objc class AppDelegate: FlutterAppDelegate, MessagingDelegate {
+@objc class AppDelegate: FlutterAppDelegate {
+
+  // 엔진을 먼저 준비
+  private lazy var flutterEngine = FlutterEngine(name: "gontimetable_engine")
+
   override func application(
     _ application: UIApplication,
-    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
-    FirebaseApp.configure()
 
-    // FCM 메시징 델리게이트 설정
-    Messaging.messaging().delegate = self
+    // 1) 엔진 실행
+    flutterEngine.run()
 
-    // UNUserNotificationCenter 델리게이트 설정 및 알림 권한 요청
-    UNUserNotificationCenter.current().delegate = self
-    let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-    UNUserNotificationCenter.current().requestAuthorization(options: authOptions) { granted, error in
-      if let error = error {
-        print("알림 권한 요청 오류: \(error.localizedDescription)")
-      }
-    }
+    // 2) 플러그인들을 "엔진"에 등록 (self 아님!)
+    GeneratedPluginRegistrant.register(with: flutterEngine)
 
-    application.registerForRemoteNotifications()
+    // 3) 엔진으로 VC 만들고 윈도우에 붙이기
+    let flutterVC = FlutterViewController(engine: flutterEngine, nibName: nil, bundle: nil)
+    self.window = UIWindow(frame: UIScreen.main.bounds)
+    // --- Safety: eliminate black flash after splash ---
+    // Make sure the window and Flutter view show white instead of black
+    self.window?.backgroundColor = .white
+    flutterVC.view.isOpaque = true
+    flutterVC.view.backgroundColor = .white
+    // --- end safety ---
+    self.window?.rootViewController = flutterVC
+    self.window?.makeKeyAndVisible()
 
-    GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-  }
-
-  // FCM 토큰 수신 콜백 메서드 (override 키워드 제거)
-  func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-    print("📱 FCM registration token: \(fcmToken ?? "없음")")
-    // 여기서 fcmToken을 서버로 전송하거나, 로컬에 저장하는 등 추가 작업을 할 수 있음.
-  }
-
-  // 앱이 포그라운드 상태에서 알림을 수신할 때 처리하는 메서드 (override 키워드 제거)
-  override func userNotificationCenter(_ center: UNUserNotificationCenter,
-                              willPresent notification: UNNotification,
-                              withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-    completionHandler([.alert, .badge, .sound])
   }
 }

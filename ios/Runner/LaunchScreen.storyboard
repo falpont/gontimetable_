@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="20037" targetRuntime="iOS.CocoaTouch" initialViewController="VC1">
+  <scenes>
+    <scene sceneID="SC1">
+      <objects>
+        <viewController id="VC1" sceneMemberID="viewController">
+          <view key="view" contentMode="scaleToFill" id="ROOT" userLabel="LaunchRoot">
+            <rect key="frame" x="0" y="0" width="414" height="896"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+              <imageView id="IMG" userInteractionEnabled="NO" contentMode="scaleAspectFit"
+                         image="LaunchImage" translatesAutoresizingMaskIntoConstraints="NO">
+                <rect key="frame" x="147" y="388" width="120" height="120"/>
+              </imageView>
+            </subviews>
+            <!-- 흰색 배경 -->
+            <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+            <constraints>
+              <!-- 가운데 정렬 -->
+              <constraint firstItem="IMG" firstAttribute="centerX" secondItem="ROOT" secondAttribute="centerX" id="cX"/>
+              <constraint firstItem="IMG" firstAttribute="centerY" secondItem="ROOT" secondAttribute="centerY" id="cY"/>
+              <!-- 크기 비율로 지정 -->
+              <constraint firstItem="IMG" firstAttribute="width" secondItem="ROOT" secondAttribute="width" multiplier="0.62" id="w"/>
+              <constraint firstItem="IMG" firstAttribute="height" secondItem="IMG" secondAttribute="width" multiplier="1" id="h"/>
+            </constraints>
+            <viewLayoutGuide key="safeArea" id="SAFE"/>
+          </view>
+        </viewController>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="FR1" sceneMemberID="firstResponder"/>
+      </objects>
+    </scene>
+  </scenes>
+  <resources>
+    <image name="LaunchImage" width="1024" height="1024"/>
+  </resources>
+</document>

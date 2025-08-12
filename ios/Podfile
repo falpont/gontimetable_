@@ -1,5 +1,4 @@
-# Uncomment this line to define a global platform for your project
- platform :ios, '13.0'
+platform :ios, '13.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -17,7 +16,7 @@ def flutter_root
   end
 
   File.foreach(generated_xcode_build_settings_path) do |line|
-    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    matches = line.match(/FLUTTER_ROOT=(.*)/)
     return matches[1].strip if matches
   end
   raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
@@ -28,18 +27,30 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  use_frameworks!
-  
-  pod 'Firebase/Messaging'
+  # Do NOT use `use_frameworks!` unless absolutely necessary; it causes runtime issues with some Flutter pods.
+  # If a specific plugin requires frameworks, prefer static linkage:
+  # use_frameworks! :linkage => :static
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
   target 'RunnerTests' do
     inherit! :search_paths
   end
 end
 
 post_install do |installer|
-  installer.pods_project.targets.each do |target|
-    flutter_additional_ios_build_settings(target)
+  installer.pods_project.targets.each do |t|
+    flutter_additional_ios_build_settings(t)
+    t.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+
+      config.build_settings.delete('EXCLUDED_ARCHS[sdk=iphonesimulator*]')
+      config.build_settings.delete('EXCLUDED_ARCHS')
+      # -ObjC 보장
+      other_ldflags = config.build_settings['OTHER_LDFLAGS'] || '$(inherited)'
+      other_ldflags = [other_ldflags].flatten
+      other_ldflags << '-ObjC' unless other_ldflags.join(' ').include?('-ObjC')
+      config.build_settings['OTHER_LDFLAGS'] = other_ldflags
+    end
   end
 end

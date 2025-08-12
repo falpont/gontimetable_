@@ -1,153 +1,105 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:gontimetable/select_page.dart';
-import 'package:gontimetable/highschool_timetable.dart';
-import 'package:gontimetable/PersonalTimetable.dart';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
-
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print("Background message received: ${message.notification?.title}");
-}
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'screens/onboarding_screen.dart';
+import 'screens/main_app.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  final binding = WidgetsFlutterBinding.ensureInitialized();
+  // Keep native splash and prevent Flutter from drawing the first frame
+  FlutterNativeSplash.preserve(widgetsBinding: binding);
+  binding.deferFirstFrame();
 
-  runApp(
-    ScreenUtilInit(
-      designSize: const Size(375, 812),
-      builder: (context, child) {
-        return const MyApp();
-      },
-    ),
-  );
+  await initializeDateFormatting('ko_KR', null);
+
+  runApp(const GonScheduleApp());
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
-
-  @override
-  _MyAppState createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  Widget _defaultScreen = const SpotlightIntroScreen();
-
-  @override
-  void initState() {
-    super.initState();
-    _checkSavedGradeClass();
-  }
-
-  Future<void> _checkSavedGradeClass() async {
-    final prefs = await SharedPreferences.getInstance();
-    final dynamic rawGrade = prefs.get('savedGrade');
-    final dynamic rawClass = prefs.get('savedClass');
-    final String? rawSections = prefs.getString('savedSelectedSections');
-
-    final int? savedGrade = rawGrade is int
-        ? rawGrade
-        : (rawGrade is String ? int.tryParse(rawGrade) : null);
-    final int? savedClass = rawClass is int
-        ? rawClass
-        : (rawClass is String ? int.tryParse(rawClass) : null);
-
-    if (savedGrade != null
-        && savedClass != null
-        && rawSections != null
-        && rawSections.trim().isNotEmpty
-        && rawSections.trim() != '{}') {
-      final Map<String, dynamic> jsonMap = json.decode(rawSections) as Map<String, dynamic>;
-      final Map<String, String> selectedSections = jsonMap.map(
-        (k, v) => MapEntry(k, v.toString()),
-      );
-      if (selectedSections.isNotEmpty) {
-        setState(() {
-          _defaultScreen = PersonalTimetable(
-            grade: savedGrade,
-            classNum: savedClass,
-            selectedSections: selectedSections,
-          );
-        });
-      }
-    } else if (savedGrade != null && savedClass != null) {
-      setState(() {
-        _defaultScreen = HighSchoolTimetable(
-          grade: savedGrade,
-          classNum: savedClass,
-        );
-      });
-    } else {
-      setState(() {
-        _defaultScreen = const GradeClassSelectionScreen();
-      });
-    }
-  }
+class GonScheduleApp extends StatelessWidget {
+  const GonScheduleApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "곤시간표",
+      title: '곤스케줄',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        scaffoldBackgroundColor: Colors.white,
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.white,
-          elevation: 1,
-          iconTheme: const IconThemeData(color: Colors.black),
-          titleTextStyle: const TextStyle(color: Colors.black, fontSize: 20),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF374151),
+          brightness: Brightness.light,
         ),
+        useMaterial3: true,
+        scaffoldBackgroundColor: Colors.white,
+        fontFamily: GoogleFonts.notoSans().fontFamily,
       ),
-      home: Builder(
-        builder: (context) {
-          return Center(
-            child: FractionallySizedBox(
-              widthFactor: 1.0,
-              child: _defaultScreen,
-            ),
-          );
-        },
-      ),
+      home: const _InitialRoute(),
     );
   }
 }
 
-class SpotlightIntroScreen extends StatelessWidget {
-  const SpotlightIntroScreen({super.key});
+
+class _InitialRoute extends StatefulWidget {
+  const _InitialRoute();
+
+  @override
+  State<_InitialRoute> createState() => _InitialRouteState();
+}
+
+class _InitialRouteState extends State<_InitialRoute> {
+  late final Future<bool> _future;
+
+  Future<bool> _hasGradeClass() async {
+    final prefs = await SharedPreferences.getInstance();
+    final g = prefs.getInt('grade');
+    final c = prefs.getInt('class');
+    // 디버그 로그
+    debugPrint('[Main] prefs grade=$g, class=$c');
+    return g != null && c != null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _hasGradeClass();
+
+    _future.whenComplete(() {
+      // Remove native splash and allow first frame only after the next frame,
+      // so we transition straight from splash -> first Flutter frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        FlutterNativeSplash.remove();
+        WidgetsBinding.instance.allowFirstFrame();
+
+        // Apply system UI style after first frame to avoid flicker
+        await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+        SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          systemNavigationBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ));
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.lightbulb_outline,
-                color: Color(0xFFFFD54F), // yellow color
-                size: 80,
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Spotlight',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF8D8D8D), // gray color
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return FutureBuilder<bool>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.data == true) {
+          return const MainApp();
+        }
+        return const OnboardingScreen();
+      },
     );
   }
 }
